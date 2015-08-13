@@ -42,6 +42,24 @@ class Chef
           is_i386_process_on_x86_64_windows?
       end
 
+      def forced_32bit_override_required?(node, desired_architecture)
+        desired_architecture == :i386 &&
+          node_windows_architecture(node) == :x86_64 &&
+          !is_i386_process_on_x86_64_windows?
+      end
+
+      def wow64_directory
+        win32_get_system_wow64_directory = ::Win32::API.new('GetSystemWow64Directory', 'PI', 'I', 'kernel32')
+        buf = "\0" * 255
+        succeeded = win32_get_system_wow64_directory.call(buf, 255)
+
+        if succeeded == 0
+          raise Win32APIError "Failed to get Wow64 system directory"
+        end
+
+        buf = buf.strip unless buf.strip.empty?
+      end
+
       def with_os_architecture(node, architecture: nil)
         node ||= begin
           os_arch = ENV['PROCESSOR_ARCHITEW6432'] ||
