@@ -75,14 +75,14 @@ describe Chef::Mixin::WindowsArchitectureHelper do
   end
 
   def with_node_architecture_combinations
-      @valid_architectures.each do | node_architecture |
-        new_node = Chef::Node.new
-        new_node.default["kernel"] = Hash.new
-        new_node.default["kernel"][:machine] = node_architecture.to_s
+    @valid_architectures.each do | node_architecture |
+      new_node = Chef::Node.new
+      new_node.default["kernel"] = Hash.new
+      new_node.default["kernel"][:machine] = node_architecture.to_s
 
-        @valid_architectures.each do | architecture |
-          yield new_node, architecture if block_given?
-        end
+      @valid_architectures.each do | architecture |
+        yield new_node, architecture if block_given?
       end
+    end
   end
 end
