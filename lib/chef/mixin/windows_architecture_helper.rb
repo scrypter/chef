@@ -30,6 +30,7 @@ class Chef
       if Chef::Platform.windows?
         include Chef::ReservedNames::Win32::API::Process
         include Chef::ReservedNames::Win32::API::Error
+        include Chef::ReservedNames::Win32::API::System
       end
 
       def node_windows_architecture(node)
@@ -49,14 +50,14 @@ class Chef
       end
 
       def wow64_directory
-        win32_get_system_wow64_directory = ::Win32::API.new('GetSystemWow64Directory', 'PI', 'I', 'kernel32')
-        buf = "\0" * 255
-        succeeded = win32_get_system_wow64_directory.call(buf, 255)
+        ptr = FFI::MemoryPointer.new :char, 255, true
+        succeeded = GetSystemWow64DirectoryA(ptr, 255)
 
         if succeeded == 0
           raise Win32APIError "Failed to get Wow64 system directory"
         end
 
+        buf = ptr.read_string
         buf = buf.strip unless buf.strip.empty?
       end
 
@@ -122,18 +123,14 @@ class Chef
       end
 
       def disable_wow64_file_redirection( node )
-        original_redirection_state = ['0'].pack('P')
+        original_redirection_state = FFI::MemoryPointer.new :pointer
 
         if ( ( node_windows_architecture(node) == :x86_64) && ::Chef::Platform.windows?)
-          win32_wow_64_disable_wow_64_fs_redirection =
-            ::Win32::API.new('Wow64DisableWow64FsRedirection', 'P', 'L', 'kernel32')
-
-          succeeded = win32_wow_64_disable_wow_64_fs_redirection.call(original_redirection_state)
+          succeeded = Wow64DisableWow64FsRedirection(original_redirection_state)
 
           if succeeded == 0
             raise Win32APIError "Failed to disable Wow64 file redirection"
           end
-
         end
 
         original_redirection_state
@@ -141,10 +138,7 @@ class Chef
 
       def restore_wow64_file_redirection( node, original_redirection_state )
         if ( (node_windows_architecture(node) == :x86_64) && ::Chef::Platform.windows?)
-          win32_wow_64_revert_wow_64_fs_redirection =
-            ::Win32::API.new('Wow64RevertWow64FsRedirection', 'P', 'L', 'kernel32')
-
-          succeeded = win32_wow_64_revert_wow_64_fs_redirection.call(original_redirection_state)
+          succeeded = Wow64RevertWow64FsRedirection(original_redirection_state)
 
           if succeeded == 0
             raise Win32APIError "Failed to revert Wow64 file redirection"
