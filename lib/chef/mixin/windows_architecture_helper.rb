@@ -19,19 +19,12 @@
 
 require 'chef/exceptions'
 require 'chef/platform/query_helpers'
-require 'win32/api' if Chef::Platform.windows?
-require 'chef/win32/api/process' if Chef::Platform.windows?
-require 'chef/win32/api/error' if Chef::Platform.windows?
+require 'chef/win32/process' if Chef::Platform.windows?
+require 'chef/win32/system' if Chef::Platform.windows?
 
 class Chef
   module Mixin
     module WindowsArchitectureHelper
-
-      if Chef::Platform.windows?
-        include Chef::ReservedNames::Win32::API::Process
-        include Chef::ReservedNames::Win32::API::Error
-        include Chef::ReservedNames::Win32::API::System
-      end
 
       def node_windows_architecture(node)
         node[:kernel][:machine].to_sym
@@ -50,15 +43,7 @@ class Chef
       end
 
       def wow64_directory
-        ptr = FFI::MemoryPointer.new :char, 255, true
-        succeeded = GetSystemWow64DirectoryA(ptr, 255)
-
-        if succeeded == 0
-          raise Win32APIError "Failed to get Wow64 system directory"
-        end
-
-        buf = ptr.read_string
-        buf = buf.strip unless buf.strip.empty?
+        Chef::ReservedNames::Win32::System.get_system_wow64_directory
       end
 
       def with_os_architecture(node, architecture: nil)
@@ -107,42 +92,21 @@ class Chef
 
       def is_i386_process_on_x86_64_windows?
         if Chef::Platform.windows?
-          is_64_bit_process_result = FFI::MemoryPointer.new(:int)
-
-          # The return value of IsWow64Process is nonzero value if the API call succeeds.
-          # The result data are returned in the last parameter, not the return value.
-          call_succeeded = IsWow64Process(GetCurrentProcess(), is_64_bit_process_result)
-
-          # The result is nonzero if IsWow64Process's calling process, in the case here
-          # this process, is running under WOW64, i.e. the result is nonzero if this
-          # process is 32-bit (aka :i386).
-          result = (call_succeeded != 0) && (is_64_bit_process_result.get_int(0) != 0)
+          Chef::ReservedNames::Win32::Process.is_wow64_process
         else
           false
         end
       end
 
       def disable_wow64_file_redirection( node )
-        original_redirection_state = FFI::MemoryPointer.new :pointer
-
         if ( ( node_windows_architecture(node) == :x86_64) && ::Chef::Platform.windows?)
-          succeeded = Wow64DisableWow64FsRedirection(original_redirection_state)
-
-          if succeeded == 0
-            raise Win32APIError "Failed to disable Wow64 file redirection"
-          end
+          Chef::ReservedNames::Win32::System.wow64_disable_wow64_fs_redirection
         end
-
-        original_redirection_state
       end
 
       def restore_wow64_file_redirection( node, original_redirection_state )
         if ( (node_windows_architecture(node) == :x86_64) && ::Chef::Platform.windows?)
-          succeeded = Wow64RevertWow64FsRedirection(original_redirection_state)
-
-          if succeeded == 0
-            raise Win32APIError "Failed to revert Wow64 file redirection"
-          end
+          Chef::ReservedNames::Win32::System.wow64_revert_wow64_fs_redirection(original_redirection_state)
         end
       end
 
