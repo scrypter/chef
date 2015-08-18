@@ -31,7 +31,7 @@ class Chef
         succeeded = GetSystemWow64DirectoryA(ptr, 255)
 
         if succeeded == 0
-          raise Win32APIError "Failed to get Wow64 system directory"
+          raise Win32APIError, "Failed to get Wow64 system directory"
         end
 
         buf = ptr.read_string
@@ -44,7 +44,7 @@ class Chef
         succeeded = Wow64DisableWow64FsRedirection(original_redirection_state)
 
         if succeeded == 0
-          raise Win32APIError "Failed to disable Wow64 file redirection"
+          raise Win32APIError, "Failed to disable Wow64 file redirection"
         end
 
         original_redirection_state
@@ -54,7 +54,7 @@ class Chef
         succeeded = Wow64RevertWow64FsRedirection(original_redirection_state)
 
         if succeeded == 0
-          raise Win32APIError "Failed to revert Wow64 file redirection"
+          raise Win32APIError, "Failed to revert Wow64 file redirection"
         end
       end
 
