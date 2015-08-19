@@ -27,19 +27,18 @@ class Chef
       extend Chef::ReservedNames::Win32::API::System
 
       def self.get_system_wow64_directory
-        ptr = FFI::MemoryPointer.new :char, 255, true
+        ptr = FFI::MemoryPointer.new(:char, 255, true)
         succeeded = GetSystemWow64DirectoryA(ptr, 255)
 
         if succeeded == 0
           raise Win32APIError, "Failed to get Wow64 system directory"
         end
 
-        buf = ptr.read_string
-        buf = buf.strip unless buf.strip.empty?
+        ptr.read_string.strip
       end
 
       def self.wow64_disable_wow64_fs_redirection
-        original_redirection_state = FFI::MemoryPointer.new :pointer
+        original_redirection_state = FFI::MemoryPointer.new(:pointer)
 
         succeeded = Wow64DisableWow64FsRedirection(original_redirection_state)
 

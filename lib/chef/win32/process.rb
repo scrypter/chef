@@ -79,7 +79,7 @@ class Chef
         # The result is nonzero if IsWow64Process's calling process, in the case here
         # this process, is running under WOW64, i.e. the result is nonzero if this
         # process is 32-bit (aka :i386).
-        result = (call_succeeded != 0) && (is_64_bit_process_result.get_int(0) != 0)
+        (call_succeeded != 0) && (is_64_bit_process_result.get_int(0) != 0)
       end
 
         # Must have PROCESS_QUERY_INFORMATION or PROCESS_QUERY_LIMITED_INFORMATION rights,
